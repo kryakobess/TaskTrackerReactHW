@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function TaskInput({ onAddTask }) {
@@ -29,11 +29,17 @@ function TaskInput({ onAddTask }) {
 }
 
 function App() {
-    const [tasks, setTasks] = useState({
-        todo: [],
-        inProgress: [],
-        done: []
-    });
+    const storedTasks = JSON.parse(localStorage.getItem('tasks'));
+
+    const [tasks, setTasks] = useState(storedTasks === null || storedTasks.isEmpty ? {
+        ToDo: [],
+        InProgress: [],
+        Done: []
+    } : storedTasks);
+
+    useEffect(() => {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+    }, [tasks]);
 
     const handleAddTask = (status, task) => {
         setTasks(prevTasks => {
@@ -58,7 +64,7 @@ function App() {
     const handleEditTask = (status, index) => {
         const updatedTask = prompt('Enter the new task:');
         if (updatedTask !== null && updatedTask.trim() !== '') {
-            setTasks(prevTasks => {
+            setTasks((prevTasks) => {
                 const updatedTasks = [...prevTasks[status]];
                 updatedTasks[index] = updatedTask.trim();
                 return {
@@ -93,9 +99,9 @@ function App() {
         <div className="App">
             <h1>Task Tracker</h1>
             <div className="task-container">
-                {renderTasks('todo')}
-                {renderTasks('inProgress')}
-                {renderTasks('done')}
+                {renderTasks('ToDo')}
+                {renderTasks('InProgress')}
+                {renderTasks('Done')}
             </div>
         </div>
     );
