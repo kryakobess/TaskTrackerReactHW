@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 function TaskInput({ onAddTask }) {
     const [newTask, setNewTask] = useState('');
@@ -75,35 +76,76 @@ function App() {
         }
     };
 
+    const onDragEnd = (result) => {
+        const { source, destination } = result;
+
+        if (!destination) return;
+
+        if (
+            destination.droppableId === source.droppableId &&
+            destination.index === source.index
+        ) {
+            return;
+        }
+
+        const sourceTasks = [...tasks[source.droppableId]];
+        const destinationTasks = [...tasks[destination.droppableId]];
+        const [removed] = sourceTasks.splice(source.index, 1);
+        destinationTasks.splice(destination.index, 0, removed);
+
+        setTasks(prevTasks => {
+            return {
+                ...prevTasks,
+                [source.droppableId]: sourceTasks,
+                [destination.droppableId]: destinationTasks
+            };
+        });
+    };
+
     const renderTasks = (status) => {
         return (
             <div className="task-column">
                 <h2>{status}</h2>
-                <ul>
-                    {tasks[status].map((task, index) => (
-                        <li key={index}>
-                            <span>{task}</span>
-                            <div>
-                                <button onClick={() => handleEditTask(status, index)}>Edit</button>
-                                <button onClick={() => handleDeleteTask(status, index)}>Delete</button>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
+                <Droppable droppableId={status} key={status}>
+                    {(provided) => (
+                        <ul {...provided.droppableProps} ref={provided.innerRef}>
+                            {tasks[status].map((task, index) => (
+                                <Draggable key={index} draggableId={`${status}-${index}`} index={index}>
+                                    {(provided) => (
+                                        <li
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            {...provided.dragHandleProps}
+                                        >
+                                            <span>{task}</span>
+                                            <div>
+                                                <button onClick={() => handleEditTask(status, index)}>Edit</button>
+                                                <button onClick={() => handleDeleteTask(status, index)}>Delete</button>
+                                            </div>
+                                        </li>
+                                    )}
+                                </Draggable>
+                            ))}
+                            {provided.placeholder}
+                        </ul>
+                    )}
+                </Droppable>
                 <TaskInput onAddTask={(task) => handleAddTask(status, task)} />
             </div>
         );
     };
 
     return (
-        <div className="App">
-            <h1>Task Tracker</h1>
-            <div className="task-container">
-                {renderTasks('ToDo')}
-                {renderTasks('InProgress')}
-                {renderTasks('Done')}
+        <DragDropContext onDragEnd={onDragEnd}>
+            <div className="App">
+                <h1>Task Tracker</h1>
+                <div className="task-container">
+                    {renderTasks('ToDo')}
+                    {renderTasks('InProgress')}
+                    {renderTasks('Done')}
+                </div>
             </div>
-        </div>
+        </DragDropContext>
     );
 }
 
